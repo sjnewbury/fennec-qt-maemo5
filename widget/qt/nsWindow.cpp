@@ -36,7 +36,7 @@ static Qt::GestureType gSwipeGestureId = Qt::CustomGesture;
 // multitouch.
 static const float GESTURES_BLOCK_MOUSE_FOR = 200;
 #ifdef MOZ_ENABLE_QTMOBILITY
-#include <QtSensors/QOrientationSensor>
+#include <QOrientationSensor>
 using namespace QtMobility;
 #endif // MOZ_ENABLE_QTMOBILITY
 #endif // QT version check 4.6
