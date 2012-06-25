@@ -7,8 +7,8 @@
 #ifndef MOZQORIENTATIONMODULE_H
 #define MOZQORIENTATIONMODULE_H
 
-#include <QtSensors/QOrientationReading>
-#include <QtSensors/QOrientationFilter>
+#include <QOrientationReading>
+#include <QOrientationFilter>
 #include <QObject>
 #include <QTransform>
 
