@@ -1,0 +1,40 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+VERSION := $(shell dpkg-parsechangelog | sed -ne "s/^Version: \(.*\)/\1/p")
+
+# Find out how many parallel threads to run
+comma := ,
+TMP_BUILD_OPTS = $(subst $(comma), ,$(DEB_BUILD_OPTIONS))
+ifneq (,$(filter parallel=%,$(TMP_BUILD_OPTS)))
+	NUMJOBS = $(patsubst parallel=%,%,$(filter parallel=%,$(TMP_BUILD_OPTS)))
+	PARALLEL_MAKEFLAGS += -j4
+endif
+
+PKG_CONFIG_PATH=/opt/qtm12/lib/pkgconfig
+clean:
+	dh_testdir
+	dh_clean -pfennec
+	-make -C mozilla-beta -f client.mk clean
+	-rm build-stamp
+	-rm configure-stamp
+
+configure: configure-stamp
+configure-stamp:
+	cp debian/mozconfig ./
+	make -f client.mk configure
+	touch configure-stamp
+	
+build: build-stamp
+build-stamp: configure-stamp
+	make $(PARALLEL_MAKEFLAGS) -f client.mk build
+	touch build-stamp
+
+binary:
+	dh_testdir
+	dh_clean -pfennec
+	make -C ./obj-build deb DEB_PKG_VERSION="$(VERSION)"
+	cp ./obj-build/mobile/xul/*.deb ../
+	cp ./obj-build/mobile/xul/installer/debian/files debian/
+
+.PHONY: clean configure build binary

@@ -1,0 +1,35 @@
+export ac_cv_have_usable_wchar_option_v2="no"
+mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/objdir
+ac_add_options --prefix=/opt
+ac_add_options --libdir=/opt
+ac_add_options --enable-application=mobile/xul
+ac_add_options --with-maemo-version=5
+ac_add_options --enable-update-packaging
+# ac_add_options --enable-tests
+ac_add_options --enable-default-toolkit=cairo-qt
+# ac_add_options --enable-meegocontentaction
+# ac_add_options --enable-meegotouch
+ac_add_options --enable-mobile-optimize
+
+# required for meegotouch
+#ac_add_options --enable-cpp-rtti
+
+export MOZ_DEBUG_SYMBOLS=1
+ac_add_options --enable-debug-symbols="-ggdb"
+export MOZILLA_OFFICIAL=1
+mk_add_options PROFILE_GEN_SCRIPT=@TOPSRCDIR@/build/profile_pageloader.pl
+
+ac_add_options --enable-optimize
+# mk_add_options MOZ_MAKE_FLAGS="-j4"
+mk_add_options MOZ_OBJDIR="@TOPSRCDIR@/obj-build"
+ac_add_options --with-arm-kuser
+ac_add_options --with-thumb=yes
+ac_add_options --with-thumb-interwork=toolchain-default
+ac_add_options --with-fpu=neon
+ac_add_options --with-float-abi=toolchain-default
+#ac_add_options --enable-official-branding
+# bug 703305
+ac_add_options --disable-elf-hack
+export LDFLAGS="-Wl,-rpath-link,$PWD/dist/bin/:/usr/lib:/lib"
+export CFLAGS="${CFLAGS} -fno-strict-volatile-bitfields"
+export CXXFLAGS="${CXXFLAGS} -fno-strict-volatile-bitfields"

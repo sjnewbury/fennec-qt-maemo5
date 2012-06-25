@@ -1,0 +1,20 @@
+Source: fennec
+Section: user/network
+Priority: extra
+Maintainer: Mobile Feedback <mobile-feedback@mozilla.com>
+Build-Depends: debhelper (>= 4), libcurl3-dev, yasm,
+ libqt4-core, libqt4-gui, libqt4-dev, libqtm-dev,
+ libxaw7-dev, libfreetype6-dev, libxi-dev,
+ libhildonmime-dev, libosso-dev, libidl-dev, liblocation-dev,
+ libasound2-dev, libhildon1-dev, libiw-dev,
+ libxdamage-dev, libxcomposite-dev,
+ libnotify-dev, libhildonfm2-dev, libconic0-dev,
+ python2.5 | python2.4, python-simplejson
+Standards-Version: 3.7.2
+
+# This section will be overwritten by Mozilla scripts
+Package: fennec
+Architecture: armel
+Depends: ${shlibs:Depends}
+Description: Web browser built by the Mozilla community
+ The Firefox Web browser puts you in control of your Web experience with easy navigation, support for add-ons and synchronizes with Firefox on your PC.
