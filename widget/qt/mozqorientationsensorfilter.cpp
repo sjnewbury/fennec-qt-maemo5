@@ -4,6 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#if !(MOZ_PLATFORM_MAEMO == 5)
 #include "mozqorientationsensorfilter.h"
 #ifdef MOZ_ENABLE_MEEGOTOUCH
 #include <MApplication>
@@ -90,3 +91,4 @@ MozQOrientationSensorFilter::GetRotationTransform()
     return mWindowRotationTransform;
 }
 
+#endif
