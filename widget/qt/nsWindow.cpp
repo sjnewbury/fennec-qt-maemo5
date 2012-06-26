@@ -2964,7 +2964,10 @@ nsWindow::Show(bool aState)
          mWindowType == eWindowType_dialog ||
          mWindowType == eWindowType_popup))
     {
-#if !(MOZ_PLATFORM_MAEMO == 5)
+#if (MOZ_PLATFORM_MAEMO == 5)
+        QObject::connect(QApplication::desktop(), SIGNAL(resized(int)),
+                         mWidget, SLOT(orientationChanged()));
+#else
         if (!gOrientation) {
             gOrientation = new QOrientationSensor();
             gOrientation->addFilter(&gOrientationFilter);
