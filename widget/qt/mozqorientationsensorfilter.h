@@ -7,6 +7,7 @@
 #ifndef MOZQORIENTATIONMODULE_H
 #define MOZQORIENTATIONMODULE_H
 
+#if !(MOZ_PLATFORM_MAEMO == 5)
 #include <QOrientationReading>
 #include <QOrientationFilter>
 #include <QObject>
@@ -41,4 +42,5 @@ private:
     static QTransform mWindowRotationTransform;
 };
 
+#endif
 #endif
