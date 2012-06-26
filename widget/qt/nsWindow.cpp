@@ -53,7 +53,12 @@ using namespace QtMobility;
 #include "mozqwidget.h"
 
 #ifdef MOZ_ENABLE_QTMOBILITY
+#if (MOZ_PLATFORM_MAEMO == 5)
+#include <QApplication>
+#include <QDesktopWidget>
+#else
 #include "mozqorientationsensorfilter.h"
+#endif
 #endif
 
 #include "nsIdleService.h"
@@ -153,8 +158,10 @@ is_mouse_in_window (MozQWidget* aWindow, double aMouseX, double aMouseY);
 static bool sAltGrModifier = false;
 
 #ifdef MOZ_ENABLE_QTMOBILITY
+#if !(MOZ_PLATFORM_MAEMO == 5)
 static QOrientationSensor *gOrientation = nsnull;
 static MozQOrientationSensorFilter gOrientationFilter;
+#endif
 #endif
 
 static bool
@@ -375,12 +382,14 @@ nsWindow::Destroy(void)
         gShmImage = nsnull;
 #endif
 #ifdef MOZ_ENABLE_QTMOBILITY
+#if !(MOZ_PLATFORM_MAEMO == 5)
         if (gOrientation) {
             gOrientation->removeFilter(&gOrientationFilter);
             gOrientation->stop();
             delete gOrientation;
             gOrientation = nsnull;
         }
+#endif
 #endif
     }
 
@@ -1053,11 +1062,13 @@ nsWindow::DoPaint(QPainter* aPainter, const QStyleOptionGraphicsItem* aOption, Q
         gfxMatrix matr;
         matr.Translate(gfxPoint(aPainter->transform().dx(), aPainter->transform().dy()));
 #ifdef MOZ_ENABLE_QTMOBILITY
+#if !(MOZ_PLATFORM_MAEMO == 5)
         // This is needed for rotate transformation on MeeGo
         // This will work very slow if pixman does not handle rotation very well
         matr.Rotate((M_PI/180) * gOrientationFilter.GetWindowRotationAngle());
         static_cast<mozilla::layers::LayerManagerOGL*>(GetLayerManager(nsnull))->
             SetWorldTransform(matr);
+#endif
 #endif //MOZ_ENABLE_QTMOBILITY
 
         status = DispatchEvent(&event);
@@ -1103,10 +1114,12 @@ nsWindow::DoPaint(QPainter* aPainter, const QStyleOptionGraphicsItem* aOption, Q
 #ifdef MOZ_ENABLE_QTMOBILITY
          // This is needed for rotate transformation on MeeGo
          // This will work very slow if pixman does not handle rotation very well
+#if !(MOZ_PLATFORM_MAEMO == 5)
          matr.Rotate((M_PI/180) * gOrientationFilter.GetWindowRotationAngle());
          NS_ASSERTION(PIXMAN_VERSION > PIXMAN_VERSION_ENCODE(0, 21, 2) ||
                       !gOrientationFilter.GetWindowRotationAngle(),
                       "Old pixman and rotate transform, it is going to be slow");
+#endif
 #endif //MOZ_ENABLE_QTMOBILITY
 
       ctx->SetMatrix(matr);
@@ -2922,6 +2935,10 @@ nsWindow::Show(bool aState)
          mWindowType == eWindowType_dialog ||
          mWindowType == eWindowType_popup))
     {
+#if (MOZ_PLATFORM_MAEMO == 5)
+        QObject::connect(QApplication::desktop(), SIGNAL(resized(int)),
+                         mWidget, SLOT(orientationChanged()));
+#else
         if (!gOrientation) {
             gOrientation = new QOrientationSensor();
             gOrientation->addFilter(&gOrientationFilter);
@@ -2934,6 +2951,7 @@ nsWindow::Show(bool aState)
             QObject::connect((QObject*) &gOrientationFilter, SIGNAL(orientationChanged()),
                              mWidget, SLOT(orientationChanged()));
         }
+#endif
     }
 #endif
 

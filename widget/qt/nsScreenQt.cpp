@@ -13,7 +13,9 @@
 #include "nsXULAppAPI.h"
 
 #ifdef MOZ_ENABLE_QTMOBILITY
+#if !(MOZ_PLATFORM_MAEMO == 5)
 #include "mozqorientationsensorfilter.h"
+#endif
 #endif
 
 #ifdef MOZ_ENABLE_QMSYSTEM2
@@ -48,12 +50,14 @@ NS_IMETHODIMP
 nsScreenQt::GetRect(PRInt32 *outLeft,PRInt32 *outTop,
                     PRInt32 *outWidth,PRInt32 *outHeight)
 {
-    QRect r = QApplication::desktop()->screenGeometry(mScreen);
+  QRect r = QApplication::desktop()->screenGeometry(mScreen);
 #ifdef MOZ_ENABLE_QTMOBILITY
+#if !(MOZ_PLATFORM_MAEMO == 5)
     r = MozQOrientationSensorFilter::GetRotationTransform().mapRect(r);
     // just rotating gives us weird negative coordinates, but we want to return
     // sensible logical coordinates
     r.moveTo(0, 0);
+#endif
 #endif
 
     *outTop = r.x();
@@ -70,7 +74,9 @@ nsScreenQt::GetAvailRect(PRInt32 *outLeft,PRInt32 *outTop,
 {
     QRect r = QApplication::desktop()->screenGeometry(mScreen);
 #ifdef MOZ_ENABLE_QTMOBILITY
+#if !(MOZ_PLATFORM_MAEMO == 5)
     r = MozQOrientationSensorFilter::GetRotationTransform().mapRect(r);
+#endif
 #endif
 
     *outTop = r.x();
