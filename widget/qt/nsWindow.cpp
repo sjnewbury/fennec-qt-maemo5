@@ -2308,12 +2308,8 @@ nsWindow::Create(nsIWidget        *aParent,
 
     // check if we should listen for resizes
 
-#if MOZ_PLATFORM_MAEMO == 5
-    mListenForResizes = true;
-#else
     mListenForResizes = (aNativeParent ||
                          (aInitData && aInitData->mListenForResizes));
-#endif
     return NS_OK;
 }
 
@@ -3053,7 +3049,7 @@ nsWindow::Resize(PRInt32 aWidth, PRInt32 aHeight, bool aRepaint)
     }
 
     // synthesize a resize event if this isn't a toplevel
-    if (mIsTopLevel || mListenForResizes) {
+    if (!mIsTopLevel || mListenForResizes) {
         nsIntRect rect(mBounds.x, mBounds.y, aWidth, aHeight);
         nsEventStatus status;
         DispatchResizeEvent(rect, status);
