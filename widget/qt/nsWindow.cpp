@@ -2307,9 +2307,13 @@ nsWindow::Create(nsIWidget        *aParent,
     Resize(mBounds.x, mBounds.y, mBounds.width, mBounds.height, false);
 
     // check if we should listen for resizes
+
+#if MOZ_PLATFORM_MAEMO == 5
+    mListenForResizes = true;
+#else
     mListenForResizes = (aNativeParent ||
                          (aInitData && aInitData->mListenForResizes));
-
+#endif
     return NS_OK;
 }
 
