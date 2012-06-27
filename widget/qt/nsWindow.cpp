@@ -95,12 +95,16 @@ using namespace QtMobility;
 
 #ifdef MOZ_X11
 #include "keysym2ucs.h"
-#if MOZ_PLATFORM_MAEMO == 6
+#if MOZ_PLATFORM_MAEMO >= 5
 #include <X11/Xatom.h>
+#if MOZ_PLATFORM_MAEMO == 6
 static Atom sPluginIMEAtom = nsnull;
 #define PLUGIN_VKB_REQUEST_PROP "_NPAPI_PLUGIN_REQUEST_VKB"
 #include <QThread>
-#endif
+#else
+#define HD_ZOOM_KEY_PROP "_HILDON_ZOOM_KEY_ATOM"
+#endif //MOZ_PLATFORM_MAEMO == 6
+#endif //MOZ_PLATFORM_MAEMO >= 5
 #endif //MOZ_X11
 
 #include <QtOpenGL/QGLWidget>
@@ -2275,6 +2279,28 @@ nsWindow::Create(nsIWidget        *aParent,
     if (!mWidget)
         return NS_ERROR_OUT_OF_MEMORY;
 
+#if MOZ_PLATFORM_MAEMO == 5
+    if (aInitData && aInitData->mWindowType == eWindowType_toplevel) {
+        QWidget *widget = GetViewWidget();
+        if (widget) {
+            // Enable rotate support
+            widget->setAttribute(Qt::WA_Maemo5AutoOrientation, true);
+
+            // Set non-composited for performance boost
+            widget->setAttribute(Qt::WA_Maemo5NonComposited);            
+
+            // Grab volume keys for zoom function on Maemo5
+            unsigned long volume_set = 1;
+            Atom sHildonKeyAtom = XInternAtom(mozilla::DefaultXDisplay(),
+              HD_ZOOM_KEY_PROP, False);
+            if (sHildonKeyAtom)
+                XChangeProperty (mozilla::DefaultXDisplay(),
+                  widget->winId(), sHildonKeyAtom,
+                  XA_INTEGER, 32, PropModeReplace,
+                  reinterpret_cast<unsigned char *>(&volume_set), 1);
+        }
+    }
+#endif
     LOG(("Create: nsWindow [%p] [%p]\n", (void *)this, (void *)mWidget));
 
     // resize so that everything is set to the right dimensions
