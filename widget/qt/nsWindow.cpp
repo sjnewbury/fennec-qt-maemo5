@@ -2287,7 +2287,7 @@ nsWindow::Create(nsIWidget        *aParent,
             widget->setAttribute(Qt::WA_Maemo5AutoOrientation, true);
 
             // Set non-composited for performance boost
-            widget->setAttribute(Qt::WA_Maemo5NonComposited);            
+            widget->setAttribute(Qt::WA_Maemo5NonComposited);
 
             // Grab volume keys for zoom function on Maemo5
             unsigned long volume_set = 1;
@@ -2712,6 +2712,9 @@ nsWindow::createQWidget(MozQWidget *parent,
             newView->setWindowModality(Qt::WindowModal);
         }
 
+#if (MOZ_PLATFORM_MAEMO == 5)
+        QObject::connect(QApplication::desktop(), SIGNAL(resized(int)), widget, SLOT(orientationChanged()));
+#endif
 #if defined(MOZ_PLATFORM_MAEMO) || defined(MOZ_GL_PROVIDER)
         if (GetShouldAccelerate()) {
             // Only create new OGL widget if it is not yet installed
@@ -2961,10 +2964,7 @@ nsWindow::Show(bool aState)
          mWindowType == eWindowType_dialog ||
          mWindowType == eWindowType_popup))
     {
-#if (MOZ_PLATFORM_MAEMO == 5)
-        QObject::connect(QApplication::desktop(), SIGNAL(resized(int)),
-                         mWidget, SLOT(orientationChanged()));
-#else
+#if !(MOZ_PLATFORM_MAEMO == 5)
         if (!gOrientation) {
             gOrientation = new QOrientationSensor();
             gOrientation->addFilter(&gOrientationFilter);
