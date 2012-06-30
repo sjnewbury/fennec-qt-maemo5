@@ -148,8 +148,7 @@ void MozQWidget::orientationChanged()
 
     NS_ASSERTION(scene()->views().size() == 1, "Not exactly one view for our scene!");
 #if (MOZ_PLATFORM_MAEMO == 5)
-    int screen = -1; //Default screen
-    QRect screenGeometry = QApplication::desktop()->availableGeometry(screen);
+    QRect screenGeometry = QApplication::desktop()->screenGeometry();
     resize(screenGeometry.size());
     scene()->setSceneRect(QRectF(QPointF(0, 0), screenGeometry.size()));
 #else
