@@ -13,6 +13,7 @@
 #include "nsISVGGlyphFragmentNode.h"
 #include "nsSVGGlyphFrame.h"
 #include "nsSVGGraphicElement.h"
+#include "nsSVGIntegrationUtils.h"
 #include "nsSVGPathElement.h"
 #include "nsSVGTextPathFrame.h"
 #include "nsSVGUtils.h"
@@ -256,15 +257,23 @@ nsSVGTextFrame::GetBBoxContribution(const gfxMatrix &aToBBoxUserspace,
 // nsSVGContainerFrame methods:
 
 gfxMatrix
-nsSVGTextFrame::GetCanvasTM()
+nsSVGTextFrame::GetCanvasTM(PRUint32 aFor)
 {
+  if (!(GetStateBits() & NS_STATE_SVG_NONDISPLAY_CHILD)) {
+    if ((aFor == FOR_PAINTING && NS_SVGDisplayListPaintingEnabled()) ||
+        (aFor == FOR_HIT_TESTING && NS_SVGDisplayListHitTestingEnabled())) {
+      return nsSVGIntegrationUtils::GetCSSPxToDevPxMatrix(this);
+    }
+  }
+
   if (!mCanvasTM) {
     NS_ASSERTION(mParent, "null parent");
 
     nsSVGContainerFrame *parent = static_cast<nsSVGContainerFrame*>(mParent);
     nsSVGGraphicElement *content = static_cast<nsSVGGraphicElement*>(mContent);
 
-    gfxMatrix tm = content->PrependLocalTransformsTo(parent->GetCanvasTM());
+    gfxMatrix tm =
+      content->PrependLocalTransformsTo(parent->GetCanvasTM(aFor));
 
     mCanvasTM = new gfxMatrix(tm);
   }
@@ -278,15 +287,17 @@ nsSVGTextFrame::GetCanvasTM()
 static void
 MarkDirtyBitsOnDescendants(nsIFrame *aFrame)
 {
-  if (aFrame->GetStateBits() & (NS_FRAME_IS_DIRTY | NS_FRAME_FIRST_REFLOW)) {
-    // Nothing to do if we're already dirty, or if the outer-<svg>
-    // hasn't yet had its initial reflow.
+  // Do not skip marking of aFrame or any of its descendants if they have
+  // the NS_FRAME_IS_DIRTY set, because some of their descendants may not
+  // have it set, and we need all descendants to be dirty.
+  if (aFrame->GetStateBits() & (NS_FRAME_FIRST_REFLOW)) {
+    // Nothing to do if our outer-<svg> hasn't yet had its initial reflow.
     return;
   }
   nsIFrame* kid = aFrame->GetFirstPrincipalChild();
   while (kid) {
     nsISVGChildFrame* svgkid = do_QueryFrame(kid);
-    if (svgkid && !(kid->GetStateBits() & NS_FRAME_IS_DIRTY)) {
+    if (svgkid) {
       MarkDirtyBitsOnDescendants(kid);
       kid->AddStateBits(NS_FRAME_IS_DIRTY);
     }

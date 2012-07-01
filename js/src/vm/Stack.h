@@ -411,8 +411,6 @@ class StackFrame
     friend class CallObject;
     friend class ClonedBlockObject;
     friend class ArgumentsObject;
-    friend void ::js_DumpStackFrame(JSContext *, StackFrame *);
-    friend void ::js_ReportIsNotFunction(JSContext *, const js::Value *, unsigned);
 #ifdef JS_METHODJIT
     friend class mjit::CallCompiler;
     friend class mjit::GetPropCompiler;
@@ -706,26 +704,24 @@ class StackFrame
     }
 
     /*
-     * Get the frame's current bytecode, assuming |this| is in |cx|. next is
-     * frame whose prev == this, NULL if not known or if this == cx->fp().
-     * If the frame is inside an inline call made within the pc, the pc will
-     * be that of the outermost call and the state of any inlined frame(s) is
-     * returned through pinlined.
-     *
-     * Beware, as the name implies, pcQuadratic can lead to quadratic behavior
-     * in loops such as:
+     * Get the frame's current bytecode, assuming 'this' is in 'stack'. Beware,
+     * as the name implies, pcQuadratic can lead to quadratic behavior in loops
+     * such as:
      *
      *   for ( ...; fp; fp = fp->prev())
      *     ... fp->pcQuadratic(cx->stack);
      *
-     * Using next can avoid this, but in most cases prefer ScriptFrameIter;
-     * it is amortized O(1).
+     * This can be avoided in three ways:
+     *  - use ScriptFrameIter, it has O(1) iteration
+     *  - if you know the next frame (i.e., next s.t. next->prev == fp
+     *  - pcQuadratic will only iterate maxDepth frames (before giving up and
+     *    returning fp->script->code), making it O(1), but incorrect.
      */
 
-    jsbytecode *pcQuadratic(const ContextStack &stack, StackFrame *next = NULL,
-                            InlinedSite **pinlined = NULL);
+    jsbytecode *pcQuadratic(const ContextStack &stack, size_t maxDepth = SIZE_MAX);
 
-    jsbytecode *prevpc(InlinedSite **pinlined) {
+    /* Return the previous frame's pc. Unlike pcQuadratic, this is O(1). */
+    jsbytecode *prevpc(InlinedSite **pinlined = NULL) {
         if (flags_ & HAS_PREVPC) {
             if (pinlined)
                 *pinlined = prevInline_;
@@ -1142,12 +1138,6 @@ class StackFrame
 
 static const size_t VALUES_PER_STACK_FRAME = sizeof(StackFrame) / sizeof(Value);
 
-static inline unsigned
-ToReportFlags(InitialFrameFlags initial)
-{
-    return unsigned(initial & StackFrame::CONSTRUCTING);
-}
-
 static inline StackFrame::Flags
 ToFrameFlags(InitialFrameFlags initial)
 {
@@ -1374,7 +1364,7 @@ class StackSegment
     bool contains(const FrameRegs *regs) const;
     bool contains(const CallArgsList *call) const;
 
-    StackFrame *computeNextFrame(const StackFrame *fp) const;
+    StackFrame *computeNextFrame(const StackFrame *fp, size_t maxDepth) const;
 
     Value *end() const;
 
@@ -1590,6 +1580,14 @@ class ContextStack
     inline bool hasfp() const { return seg_ && seg_->maybeRegs(); }
 
     /*
+     * Return the spindex value for 'vp' which can be used to call
+     * DecompileValueGenerator. (The spindex is either the negative offset of
+     * 'vp' from 'sp', if 'vp' points to a value in the innermost scripted
+     * stack frame, otherwise it is JSDVG_SEARCH_STACK.)
+     */
+    ptrdiff_t spIndexOf(const Value *vp);
+
+    /*
      * Return the most recent script activation's registers with the same
      * caveat as hasfp regarding JS_SaveFrameChain.
      */
@@ -1662,7 +1660,6 @@ class ContextStack
 
     /* Get the topmost script and optional pc on the stack. */
     inline JSScript *currentScript(jsbytecode **pc = NULL) const;
-    inline JSScript *currentScriptWithDiagnostics(jsbytecode **pc = NULL) const;
 
     /* Get the scope chain for the topmost scripted call on the stack. */
     inline HandleObject currentScriptedScopeChain() const;
@@ -1779,14 +1776,13 @@ class StackIter
   private:
     SavedOption  savedOption_;
 
-    enum State { DONE, SCRIPTED, NATIVE, IMPLICIT_NATIVE };
+    enum State { DONE, SCRIPTED, NATIVE };
     State        state_;
 
     StackFrame   *fp_;
     CallArgsList *calls_;
 
     StackSegment *seg_;
-    Value        *sp_;
     jsbytecode   *pc_;
     JSScript     *script_;
     CallArgs     args_;
@@ -1809,13 +1805,9 @@ class StackIter
     bool operator!=(const StackIter &rhs) const { return !(*this == rhs); }
 
     bool isScript() const { JS_ASSERT(!done()); return state_ == SCRIPTED; }
-    bool isImplicitNativeCall() const {
-        JS_ASSERT(!done());
-        return state_ == IMPLICIT_NATIVE;
-    }
     bool isNativeCall() const {
         JS_ASSERT(!done());
-        return state_ == NATIVE || state_ == IMPLICIT_NATIVE;
+        return state_ == NATIVE;
     }
 
     bool isFunctionFrame() const;
@@ -1824,7 +1816,6 @@ class StackIter
     bool isConstructing() const;
 
     StackFrame *fp() const { JS_ASSERT(isScript()); return fp_; }
-    Value      *sp() const { JS_ASSERT(isScript()); return sp_; }
     jsbytecode *pc() const { JS_ASSERT(isScript()); return pc_; }
     JSScript   *script() const { JS_ASSERT(isScript()); return script_; }
     JSFunction *callee() const;

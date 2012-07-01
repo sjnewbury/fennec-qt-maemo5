@@ -1248,10 +1248,8 @@ ParseNodeToQName(Parser *parser, ParseNode *pn,
         if (!uri) {
             Value v = StringValue(prefix);
             JSAutoByteString bytes;
-            if (js_ValueToPrintable(parser->context, v, &bytes)) {
-                ReportCompileErrorNumber(parser->context, &parser->tokenStream, pn,
-                                         JSREPORT_ERROR, JSMSG_BAD_XML_NAMESPACE, bytes.ptr());
-            }
+            if (js_ValueToPrintable(parser->context, v, &bytes))
+                parser->reportError(pn, JSMSG_BAD_XML_NAMESPACE, bytes.ptr());
             return NULL;
         }
 
@@ -1333,8 +1331,7 @@ ParseNodeToXML(Parser *parser, ParseNode *pn,
     int stackDummy;
 
     if (!JS_CHECK_STACK_SIZE(cx->runtime->nativeStackLimit, &stackDummy)) {
-        ReportCompileErrorNumber(cx, &parser->tokenStream, pn, JSREPORT_ERROR,
-                                 JSMSG_OVER_RECURSED);
+        parser->reportError(pn, JSMSG_OVER_RECURSED);
         return NULL;
     }
 
@@ -1473,11 +1470,8 @@ ParseNodeToXML(Parser *parser, ParseNode *pn,
                 if (pn3->pn_atom == pn2->pn_atom) {
                     Value v = StringValue(pn2->pn_atom);
                     JSAutoByteString bytes;
-                    if (js_ValueToPrintable(cx, v, &bytes)) {
-                        ReportCompileErrorNumber(cx, &parser->tokenStream, pn2,
-                                                 JSREPORT_ERROR, JSMSG_DUPLICATE_XML_ATTR,
-                                                 bytes.ptr());
-                    }
+                    if (js_ValueToPrintable(cx, v, &bytes))
+                        parser->reportError(pn2, JSMSG_DUPLICATE_XML_ATTR, bytes.ptr());
                     goto fail;
                 }
             }
@@ -1571,11 +1565,8 @@ ParseNodeToXML(Parser *parser, ParseNode *pn,
                     EqualStrings(attrjqn->getQNameLocalName(), qn->getQNameLocalName())) {
                     Value v = StringValue(pn2->pn_atom);
                     JSAutoByteString bytes;
-                    if (js_ValueToPrintable(cx, v, &bytes)) {
-                        ReportCompileErrorNumber(cx, &parser->tokenStream, pn2,
-                                                 JSREPORT_ERROR, JSMSG_DUPLICATE_XML_ATTR,
-                                                 bytes.ptr());
-                    }
+                    if (js_ValueToPrintable(cx, v, &bytes))
+                        parser->reportError(pn2, JSMSG_DUPLICATE_XML_ATTR, bytes.ptr());
                     goto fail;
                 }
             }
@@ -1615,10 +1606,8 @@ ParseNodeToXML(Parser *parser, ParseNode *pn,
             if (IS_XML(str)) {
                 Value v = StringValue(str);
                 JSAutoByteString bytes;
-                if (js_ValueToPrintable(cx, v, &bytes)) {
-                    ReportCompileErrorNumber(cx, &parser->tokenStream, &pi,
-                                             JSREPORT_ERROR, JSMSG_RESERVED_ID, bytes.ptr());
-                }
+                if (js_ValueToPrintable(cx, v, &bytes))
+                    parser->reportError(&pi, JSMSG_RESERVED_ID, bytes.ptr());
                 goto fail;
             }
 
@@ -1659,7 +1648,7 @@ skip_child:
 #undef PN2X_SKIP_CHILD
 
 syntax:
-    ReportCompileErrorNumber(cx, &parser->tokenStream, pn, JSREPORT_ERROR, JSMSG_BAD_XML_MARKUP);
+    parser->reportError(pn, JSMSG_BAD_XML_MARKUP);
 fail:
     js_LeaveLocalRootScope(cx);
     return NULL;
@@ -4228,7 +4217,7 @@ PutProperty(JSContext *cx, HandleObject obj_, HandleId id_, JSBool strict, jsval
         if (!nameqn)
             goto bad;
         if (!JSID_IS_VOID(funid)) {
-            ok = baseops::SetPropertyHelper(cx, obj, funid, 0, vp, false);
+            ok = baseops::SetPropertyHelper(cx, obj, obj, funid, 0, vp, false);
             goto out;
         }
         nameobj = nameqn;
@@ -6079,7 +6068,7 @@ FindInScopeNamespaces(JSContext *cx, JSXML *xml, JSXMLArray<JSObject> *nsarray)
 static bool
 NamespacesToJSArray(JSContext *cx, JSXMLArray<JSObject> *array, jsval *rval)
 {
-    JSObject *arrayobj = NewDenseEmptyArray(cx);
+    Rooted<JSObject*> arrayobj(cx, NewDenseEmptyArray(cx));
     if (!arrayobj)
         return false;
     *rval = OBJECT_TO_JSVAL(arrayobj);
@@ -6090,7 +6079,7 @@ NamespacesToJSArray(JSContext *cx, JSXMLArray<JSObject> *array, jsval *rval)
         if (!ns)
             continue;
         tvr.set(ObjectValue(*ns));
-        if (!arrayobj->setElement(cx, i, tvr.addr(), false))
+        if (!arrayobj->setElement(cx, arrayobj, i, tvr.addr(), false))
             return false;
     }
     return true;

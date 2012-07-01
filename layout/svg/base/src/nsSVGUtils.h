@@ -328,24 +328,19 @@ public:
                                                 const nsRect &aUnfilteredRect);
 
   /**
-   * Figures out the worst case invalidation area for a frame, taking
-   * filters into account.
-   * Note that the caller is responsible for making sure that any cached
-   * covered regions in the frame tree rooted at aFrame are up to date.
-   * @param aRect the area in app units that needs to be invalidated in aFrame
-   * @return the rect in app units that should be invalidated, taking
-   * filters into account. Will return aRect when no filters are present.
-   */
-  static nsRect FindFilterInvalidation(nsIFrame *aFrame, const nsRect& aRect);
-
-  /**
    * Invalidates the area that is painted by the frame without updating its
    * bounds.
    *
    * This is similar to InvalidateOverflowRect(). It will go away when we
    * support display list based invalidation of SVG.
+   *
+   * @param aBoundsSubArea If non-null, a sub-area of aFrame's pre-filter
+   *   visual overflow rect that should be invalidated instead of aFrame's
+   *   entire visual overflow rect.
    */
-  static void InvalidateBounds(nsIFrame *aFrame, bool aDuringUpdate = false);
+  static void InvalidateBounds(nsIFrame *aFrame, bool aDuringUpdate = false,
+                               const nsRect *aBoundsSubArea = nsnull,
+                               PRUint32 aFlags = 0);
 
   /**
    * Schedules an update of the frame's bounds (which will in turn invalidate
@@ -475,7 +470,18 @@ public:
    * child SVG frame, container SVG frame, or a regular frame.
    * For regular frames, we just return an identity matrix.
    */
-  static gfxMatrix GetCanvasTM(nsIFrame* aFrame);
+  static gfxMatrix GetCanvasTM(nsIFrame* aFrame, PRUint32 aFor);
+
+  /**
+   * Returns the transform from aFrame's user space to canvas space. Only call
+   * with SVG frames. This is like GetCanvasTM, except that it only includes
+   * the transforms from aFrame's user space (i.e. the coordinate context
+   * established by its 'transform' attribute, or else the coordinate context
+   * that its _parent_ establishes for its children) to outer-<svg> device
+   * space. Specifically, it does not include any other transforms introduced
+   * by the frame such as x/y offsets and viewBox attributes.
+   */
+  static gfxMatrix GetUserToCanvasTM(nsIFrame* aFrame, PRUint32 aFor);
 
   /**
    * Notify the descendants of aFrame of a change to one of their ancestors
@@ -621,9 +627,9 @@ public:
 #ifdef DEBUG
   static void
   WritePPM(const char *fname, gfxImageSurface *aSurface);
+#endif
 
   static bool OuterSVGIsCallingUpdateBounds(nsIFrame *aFrame);
-#endif
 
   /*
    * Get any additional transforms that apply only to stroking

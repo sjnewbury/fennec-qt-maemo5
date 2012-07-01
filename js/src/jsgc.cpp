@@ -523,22 +523,6 @@ ChunkPool::expireAndFree(JSRuntime *rt, bool releaseAll)
     FreeChunkList(expire(rt, releaseAll));
 }
 
-JS_FRIEND_API(int64_t)
-ChunkPool::countCleanDecommittedArenas(JSRuntime *rt)
-{
-    JS_ASSERT(this == &rt->gcChunkPool);
-
-    int64_t numDecommitted = 0;
-    Chunk *chunk = emptyChunkListHead;
-    while (chunk) {
-        for (uint32_t i = 0; i < ArenasPerChunk; ++i)
-            if (chunk->decommittedArenas.get(i))
-                ++numDecommitted;
-        chunk = chunk->info.next;
-    }
-    return numDecommitted;
-}
-
 /* static */ Chunk *
 Chunk::allocate(JSRuntime *rt)
 {
@@ -895,8 +879,12 @@ MarkExactStackRoots(JSTracer *trc)
                         MarkStringRoot(trc, (JSString **)addr, "exact stackroot string");
                     } else if (i == THING_ROOT_ID) {
                         MarkIdRoot(trc, (jsid *)addr, "exact stackroot id");
+                    } else if (i == THING_ROOT_PROPERTY_ID) {
+                        MarkIdRoot(trc, ((PropertyId *)addr)->asId(), "exact stackroot property id");
                     } else if (i == THING_ROOT_VALUE) {
                         MarkValueRoot(trc, (Value *)addr, "exact stackroot value");
+                    } else if (i == THING_ROOT_TYPE) {
+                        MarkTypeRoot(trc, (Type)addr, "exact stackroot type");
                     } else if (i == THING_ROOT_SHAPE) {
                         MarkShapeRoot(trc, (Shape **)addr, "exact stackroot shape");
                     } else if (i == THING_ROOT_BASE_SHAPE) {
@@ -3180,7 +3168,6 @@ EndMarkPhase(JSRuntime *rt)
      * cycle collector from collecting some dead objects.
      */
     if (foundBlackGray) {
-        JS_ASSERT(false);
         for (CompartmentsIter c(rt); !c.done(); c.next()) {
             if (!c->isCollecting())
                 c->arenas.unmarkAll();
@@ -3815,13 +3802,15 @@ static bool
 ShouldCleanUpEverything(JSRuntime *rt, gcreason::Reason reason)
 {
     // During shutdown, we must clean everything up, for the sake of leak
-    // detection. When a runtime has no contexts, or we're doing a forced GC,
-    // those are strong indications that we're shutting down.
+    // detection. When a runtime has no contexts, or we're doing a GC before a
+    // shutdown CC, those are strong indications that we're shutting down.
     //
     // DEBUG_MODE_GC indicates we're discarding code because the debug mode
     // has changed; debug mode affects the results of bytecode analysis, so
     // we need to clear everything away.
-    return !rt->hasContexts() || reason == gcreason::CC_FORCED || reason == gcreason::DEBUG_MODE_GC;
+    return !rt->hasContexts() ||
+           reason == gcreason::SHUTDOWN_CC ||
+           reason == gcreason::DEBUG_MODE_GC;
 }
 
 static void
@@ -3840,7 +3829,7 @@ Collect(JSRuntime *rt, bool incremental, int64_t budget,
 #ifdef JS_GC_ZEAL
     bool restartVerify = rt->gcVerifyData &&
                          rt->gcZeal() == ZealVerifierValue &&
-                         reason != gcreason::CC_FORCED &&
+                         reason != gcreason::SHUTDOWN_CC &&
                          rt->hasContexts();
 
     struct AutoVerifyBarriers {
@@ -4088,6 +4077,29 @@ IterateCells(JSRuntime *rt, JSCompartment *compartment, AllocKind thingKind,
     }
 }
 
+void
+IterateGrayObjects(JSCompartment *compartment, GCThingCallback *cellCallback, void *data)
+{
+    JS_ASSERT(compartment);
+    JSRuntime *rt = compartment->rt;
+    JS_ASSERT(!rt->gcRunning);
+
+    AutoLockGC lock(rt);
+    AutoHeapSession session(rt);
+    rt->gcHelperThread.waitBackgroundSweepEnd();
+    AutoUnlockGC unlock(rt);
+
+    AutoCopyFreeListToArenas copy(rt);
+
+    for (size_t finalizeKind = 0; finalizeKind <= FINALIZE_OBJECT_LAST; finalizeKind++) {
+        for (CellIterUnderGC i(compartment, AllocKind(finalizeKind)); !i.done(); i.next()) {
+            Cell *cell = i.getCell();
+            if (cell->isMarked(GRAY))
+                cellCallback(data, cell);
+        }
+    }
+}
+
 namespace gc {
 
 JSCompartment *
@@ -4228,6 +4240,19 @@ JS::CheckStackRoots(JSContext *cx)
     if (rt->gcZeal_ != ZealStackRootingSafeValue && rt->gcZeal_ != ZealStackRootingValue)
         return;
     if (rt->gcZeal_ == ZealStackRootingSafeValue && !rt->gcExactScanningEnabled)
+        return;
+
+    // If this assertion fails, it means that an AssertRootingUnnecessary was
+    // placed around code that could trigger GC, and is therefore wrong. The
+    // AssertRootingUnnecessary should be removed and the code it was guarding
+    // should be modified to properly root any gcthings, and very possibly any
+    // code calling that function should also be modified if it was improperly
+    // assuming that GC could not happen at all within the called function.
+    // (The latter may not apply if the AssertRootingUnnecessary only protected
+    // a portion of a function, so the callers were already assuming that GC
+    // could happen.)
+    JS_ASSERT(!cx->rootingUnnecessary);
+
         return;
 
     AutoCopyFreeListToArenas copy(rt);

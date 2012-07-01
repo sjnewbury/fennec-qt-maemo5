@@ -468,9 +468,6 @@ class TypeSet
     /* Get the single value which can appear in this type set, otherwise NULL. */
     JSObject *getSingleton(JSContext *cx, bool freeze = true);
 
-    /* Whether all objects in this set are parented to a particular global. */
-    bool hasGlobalObject(JSContext *cx, JSObject *global);
-
     inline void clearObjects();
 
     /*
@@ -874,7 +871,7 @@ UseNewType(JSContext *cx, JSScript *script, jsbytecode *pc);
 
 /* Whether to use a new type object for an initializer opcode at script/pc. */
 bool
-UseNewTypeForInitializer(JSContext *cx, JSScript *script, jsbytecode *pc);
+UseNewTypeForInitializer(JSContext *cx, JSScript *script, jsbytecode *pc, JSProtoKey key);
 
 /*
  * Whether Array.prototype, or an object on its proto chain, has an
@@ -1209,7 +1206,7 @@ struct TypeCompartment
                               JSProtoKey kind, JSObject *proto, bool unknown = false);
 
     /* Make an object for an allocation site. */
-    TypeObject *newAllocationSiteTypeObject(JSContext *cx, const AllocationSiteKey &key);
+    TypeObject *newAllocationSiteTypeObject(JSContext *cx, AllocationSiteKey key);
 
     void nukeTypes(FreeOp *fop);
     void processPendingRecompiles(FreeOp *fop);
@@ -1271,6 +1268,26 @@ MOZ_NORETURN void TypeFailure(JSContext *cx, const char *fmt, ...);
 
 namespace JS {
     template<> class AnchorPermitted<js::types::TypeObject *> { };
+
+template <> struct RootMethods<const js::types::Type>
+    {
+        static js::types::Type initial() { return js::types::Type::UnknownType(); }
+        static ThingRootKind kind() { return THING_ROOT_TYPE; }
+        static bool poisoned(const js::types::Type &v) {
+            return (v.isTypeObject() && IsPoisonedPtr(v.typeObject()))
+                || (v.isSingleObject() && IsPoisonedPtr(v.singleObject()));
+        }
+    };
+
+    template <> struct RootMethods<js::types::Type>
+    {
+        static js::types::Type initial() { return js::types::Type::UnknownType(); }
+        static ThingRootKind kind() { return THING_ROOT_TYPE; }
+        static bool poisoned(const js::types::Type &v) {
+            return (v.isTypeObject() && IsPoisonedPtr(v.typeObject()))
+                || (v.isSingleObject() && IsPoisonedPtr(v.singleObject()));
+        }
+    };
 }
 
 #endif // jsinfer_h___

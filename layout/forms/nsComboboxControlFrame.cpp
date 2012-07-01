@@ -356,7 +356,7 @@ nsComboboxControlFrame::SetFocus(bool aOn, bool aRepaint)
   // This is needed on a temporary basis. It causes the focus
   // rect to be drawn. This is much faster than ReResolvingStyle
   // Bug 32920
-  Invalidate(nsRect(0,0,mRect.width,mRect.height));
+  InvalidateFrame();
 }
 
 void
@@ -946,7 +946,7 @@ nsComboboxControlFrame::GetType() const
   return nsGkAtoms::comboboxControlFrame; 
 }
 
-#ifdef NS_DEBUG
+#ifdef DEBUG
 NS_IMETHODIMP
 nsComboboxControlFrame::GetFrameName(nsAString& aResult) const
 {

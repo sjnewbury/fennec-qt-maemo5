@@ -1026,6 +1026,7 @@ pref("devtools.errorconsole.enabled", false);
 pref("devtools.toolbar.enabled", false);
 pref("devtools.toolbar.visible", false);
 pref("devtools.gcli.allowSet", false);
+pref("devtools.commands.dir", "");
 
 // Enable the Inspector
 pref("devtools.inspector.enabled", true);
@@ -1097,7 +1098,7 @@ pref("devtools.hud.height", 0);
 //   above - above the web page,
 //   below - below the web page,
 //   window - in a separate window/popup panel.
-pref("devtools.webconsole.position", "above");
+pref("devtools.webconsole.position", "below");
 
 // Remember the Web Console filters
 pref("devtools.webconsole.filter.network", true);

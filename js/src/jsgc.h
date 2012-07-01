@@ -80,9 +80,6 @@ class ChunkPool {
 
     /* Must be called with the GC lock taken. */
     void expireAndFree(JSRuntime *rt, bool releaseAll);
-
-    /* Must be called either during the GC or with the GC lock taken. */
-    JS_FRIEND_API(int64_t) countCleanDecommittedArenas(JSRuntime *rt);
 };
 
 static inline JSGCTraceKind
@@ -1037,6 +1034,12 @@ IterateChunks(JSRuntime *rt, void *data, IterateChunkCallback chunkCallback);
 extern JS_FRIEND_API(void)
 IterateCells(JSRuntime *rt, JSCompartment *compartment, gc::AllocKind thingKind,
              void *data, IterateCellCallback cellCallback);
+
+/*
+ * Invoke cellCallback on every gray JS_OBJECT in the given compartment.
+ */
+extern JS_FRIEND_API(void)
+IterateGrayObjects(JSCompartment *compartment, GCThingCallback *cellCallback, void *data);
 
 } /* namespace js */
 

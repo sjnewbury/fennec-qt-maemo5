@@ -8,7 +8,7 @@
 
 #if defined(XP_UNIX)
 
-#ifdef MOZ_WIDGET_GTK2
+#ifdef MOZ_WIDGET_GTK
 #include <gdk/gdkx.h>
 // we're using default display for now
 #define GET_NATIVE_WINDOW(aWidget) (EGLNativeWindowType)GDK_WINDOW_XID((GdkWindow *) aWidget->GetNativeData(NS_NATIVE_WINDOW))
@@ -763,6 +763,8 @@ GLFormatForImage(gfxASurface::gfxImageFormat aFormat)
         return LOCAL_GL_RGBA;
     case gfxASurface::ImageFormatRGB16_565:
         return LOCAL_GL_RGB;
+    case gfxASurface::ImageFormatA8:
+        return LOCAL_GL_LUMINANCE;
     default:
         NS_WARNING("Unknown GL format for Image format");
     }
@@ -780,6 +782,8 @@ PixelFormatForImage(gfxASurface::gfxImageFormat aFormat)
         return PIXEL_FORMAT_RGBX_8888;
     case gfxASurface::ImageFormatRGB16_565:
         return PIXEL_FORMAT_RGB_565;
+    case gfxASurface::ImageFormatA8:
+        return PIXEL_FORMAT_L_8;
     default:
         MOZ_NOT_REACHED("Unknown gralloc pixel format for Image format");
     }
@@ -793,6 +797,7 @@ GLTypeForImage(gfxASurface::gfxImageFormat aFormat)
     switch (aFormat) {
     case gfxASurface::ImageFormatARGB32:
     case gfxASurface::ImageFormatRGB24:
+    case gfxASurface::ImageFormatA8:
         return LOCAL_GL_UNSIGNED_BYTE;
     case gfxASurface::ImageFormatRGB16_565:
         return LOCAL_GL_UNSIGNED_SHORT_5_6_5;

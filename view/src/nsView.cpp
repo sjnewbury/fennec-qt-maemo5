@@ -176,6 +176,8 @@ nsView::nsView(nsViewManager* aViewManager, nsViewVisibility aVisibility)
   mDirtyRegion = nsnull;
   mDeletionObserver = nsnull;
   mWidgetIsTopLevel = false;
+  mPendingRefresh = false;
+  mSkippedPaints = 0;
 }
 
 void nsView::DropMouseGrabbing()
@@ -530,7 +532,7 @@ void nsView::InsertChild(nsView *aChild, nsView *aSibling)
   {
     if (nsnull != aSibling)
     {
-#ifdef NS_DEBUG
+#ifdef DEBUG
       NS_ASSERTION(aSibling->GetParent() == this, "tried to insert view with invalid sibling");
 #endif
       //insert after sibling
