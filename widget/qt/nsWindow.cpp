@@ -2712,7 +2712,7 @@ nsWindow::createQWidget(MozQWidget *parent,
             newView->setWindowModality(Qt::WindowModal);
         }
 
-#if (MOZ_PLATFORM_MAEMO == 5)
+#if (MOZ_PLATFORM_MAEMO == 5) && defined(MOZ_ENABLE_QTMOBILITY)
         QObject::connect(QApplication::desktop(), SIGNAL(resized(int)), widget, SLOT(orientationChanged()));
 #endif
 #if defined(MOZ_PLATFORM_MAEMO) || defined(MOZ_GL_PROVIDER)
