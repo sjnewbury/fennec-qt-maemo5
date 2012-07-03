@@ -87,7 +87,7 @@ using namespace QtMobility;
 
 #include "nsIDOMSimpleGestureEvent.h" //Gesture support
 
-#if MOZ_PLATFORM_MAEMO > 5
+#if (MOZ_PLATFORM_MAEMO > 5)
 #include "nsIDOMWindow.h"
 #include "nsIDOMElement.h"
 #include "nsIFocusManager.h"
@@ -95,9 +95,9 @@ using namespace QtMobility;
 
 #ifdef MOZ_X11
 #include "keysym2ucs.h"
-#if MOZ_PLATFORM_MAEMO >= 5
+#if (MOZ_PLATFORM_MAEMO >= 5)
 #include <X11/Xatom.h>
-#if MOZ_PLATFORM_MAEMO == 6
+#if (MOZ_PLATFORM_MAEMO == 6)
 static Atom sPluginIMEAtom = nsnull;
 #define PLUGIN_VKB_REQUEST_PROP "_NPAPI_PLUGIN_REQUEST_VKB"
 #include <QThread>
@@ -162,7 +162,7 @@ is_mouse_in_window (MozQWidget* aWindow, double aMouseX, double aMouseY);
 static bool sAltGrModifier = false;
 
 #ifdef MOZ_ENABLE_QTMOBILITY
-#if !(MOZ_PLATFORM_MAEMO == 5)
+#if (MOZ_PLATFORM_MAEMO > 5)
 static QOrientationSensor *gOrientation = nsnull;
 static MozQOrientationSensorFilter gOrientationFilter;
 #endif
@@ -386,7 +386,7 @@ nsWindow::Destroy(void)
         gShmImage = nsnull;
 #endif
 #ifdef MOZ_ENABLE_QTMOBILITY
-#if !(MOZ_PLATFORM_MAEMO == 5)
+#if (MOZ_PLATFORM_MAEMO > 5)
         if (gOrientation) {
             gOrientation->removeFilter(&gOrientationFilter);
             gOrientation->stop();
@@ -1066,7 +1066,7 @@ nsWindow::DoPaint(QPainter* aPainter, const QStyleOptionGraphicsItem* aOption, Q
         gfxMatrix matr;
         matr.Translate(gfxPoint(aPainter->transform().dx(), aPainter->transform().dy()));
 #ifdef MOZ_ENABLE_QTMOBILITY
-#if !(MOZ_PLATFORM_MAEMO == 5)
+#if (MOZ_PLATFORM_MAEMO > 5)
         // This is needed for rotate transformation on MeeGo
         // This will work very slow if pixman does not handle rotation very well
         matr.Rotate((M_PI/180) * gOrientationFilter.GetWindowRotationAngle());
@@ -1118,7 +1118,7 @@ nsWindow::DoPaint(QPainter* aPainter, const QStyleOptionGraphicsItem* aOption, Q
 #ifdef MOZ_ENABLE_QTMOBILITY
          // This is needed for rotate transformation on MeeGo
          // This will work very slow if pixman does not handle rotation very well
-#if !(MOZ_PLATFORM_MAEMO == 5)
+#if (MOZ_PLATFORM_MAEMO > 5)
          matr.Rotate((M_PI/180) * gOrientationFilter.GetWindowRotationAngle());
          NS_ASSERTION(PIXMAN_VERSION > PIXMAN_VERSION_ENCODE(0, 21, 2) ||
                       !gOrientationFilter.GetWindowRotationAngle(),
@@ -1474,7 +1474,7 @@ nsWindow::OnFocusOutEvent(QEvent *aEvent)
     if (!mWidget)
         return nsEventStatus_eIgnore;
 
-#if MOZ_PLATFORM_MAEMO > 5
+#if (MOZ_PLATFORM_MAEMO > 5)
     if (((QFocusEvent*)aEvent)->reason() == Qt::OtherFocusReason
          && mWidget->isVKBOpen()) {
         // We assume that the VKB was open in this case, because of the focus
@@ -2279,7 +2279,7 @@ nsWindow::Create(nsIWidget        *aParent,
     if (!mWidget)
         return NS_ERROR_OUT_OF_MEMORY;
 
-#if MOZ_PLATFORM_MAEMO == 5
+#if (MOZ_PLATFORM_MAEMO == 5)
     if (aInitData && aInitData->mWindowType == eWindowType_toplevel) {
         QWidget *widget = GetViewWidget();
         if (widget) {
@@ -2288,16 +2288,6 @@ nsWindow::Create(nsIWidget        *aParent,
 
             // Set non-composited for performance boost
             widget->setAttribute(Qt::WA_Maemo5NonComposited);
-
-            // Grab volume keys for zoom function on Maemo5
-            unsigned long volume_set = 1;
-            Atom sHildonKeyAtom = XInternAtom(mozilla::DefaultXDisplay(),
-              HD_ZOOM_KEY_PROP, False);
-            if (sHildonKeyAtom)
-                XChangeProperty (mozilla::DefaultXDisplay(),
-                  widget->winId(), sHildonKeyAtom,
-                  XA_INTEGER, 32, PropModeReplace,
-                  reinterpret_cast<unsigned char *>(&volume_set), 1);
         }
     }
 #endif
@@ -2964,7 +2954,7 @@ nsWindow::Show(bool aState)
          mWindowType == eWindowType_dialog ||
          mWindowType == eWindowType_popup))
     {
-#if !(MOZ_PLATFORM_MAEMO == 5)
+#if (MOZ_PLATFORM_MAEMO > 5)
         if (!gOrientation) {
             gOrientation = new QOrientationSensor();
             gOrientation->addFilter(&gOrientationFilter);
