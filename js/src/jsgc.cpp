@@ -3915,6 +3915,13 @@ GCSlice(JSRuntime *rt, JSGCInvocationKind gckind, gcreason::Reason reason)
 }
 
 void
+GCFinalSlice(JSRuntime *rt, JSGCInvocationKind gckind, gcreason::Reason reason)
+{
+    Collect(rt, true, SliceBudget::Unlimited, gckind, reason);
+}
+
+
+void
 GCDebugSlice(JSRuntime *rt, bool limit, int64_t objCount)
 {
     int64_t budget = limit ? SliceBudget::WorkBudget(objCount) : SliceBudget::Unlimited;
@@ -4252,8 +4259,6 @@ JS::CheckStackRoots(JSContext *cx)
     // a portion of a function, so the callers were already assuming that GC
     // could happen.)
     JS_ASSERT(!cx->rootingUnnecessary);
-
-        return;
 
     AutoCopyFreeListToArenas copy(rt);
 

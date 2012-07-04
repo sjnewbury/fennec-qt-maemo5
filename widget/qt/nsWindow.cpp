@@ -2307,6 +2307,7 @@ nsWindow::Create(nsIWidget        *aParent,
     Resize(mBounds.x, mBounds.y, mBounds.width, mBounds.height, false);
 
     // check if we should listen for resizes
+
     mListenForResizes = (aNativeParent ||
                          (aInitData && aInitData->mListenForResizes));
 

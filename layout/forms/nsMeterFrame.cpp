@@ -19,6 +19,7 @@
 #include "nsContentUtils.h"
 #include "nsFormControlFrame.h"
 #include "nsFontMetrics.h"
+#include "nsContentList.h"
 #include "mozilla/dom/Element.h"
 
 
@@ -210,7 +211,7 @@ nsMeterFrame::AttributeChanged(PRInt32  aNameSpaceID,
     PresContext()->PresShell()->FrameNeedsReflow(barFrame,
                                                  nsIPresShell::eResize,
                                                  NS_FRAME_IS_DIRTY);
-    InvalidateFrame();
+    Invalidate(GetVisualOverflowRectRelativeToSelf());
   }
 
   return nsContainerFrame::AttributeChanged(aNameSpaceID, aAttribute,

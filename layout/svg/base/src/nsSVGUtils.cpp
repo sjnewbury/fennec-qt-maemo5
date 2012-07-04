@@ -705,7 +705,8 @@ nsSVGUtils::InvalidateBounds(nsIFrame *aFrame, bool aDuringUpdate,
                "SVG frames must always have an nsSVGOuterSVGFrame ancestor!");
   invalidArea.MoveBy(aFrame->GetContentRect().TopLeft() - aFrame->GetPosition());
 
-  static_cast<nsSVGOuterSVGFrame*>(aFrame)->InvalidateSVG(invalidArea);
+  static_cast<nsSVGOuterSVGFrame*>(aFrame)->InvalidateWithFlags(invalidArea,
+                                                                aFlags);
 }
 
 void
@@ -831,7 +832,7 @@ nsSVGUtils::ComputeNormalizedHypotenuse(double aWidth, double aHeight)
 float
 nsSVGUtils::ObjectSpace(const gfxRect &aRect, const nsSVGLength2 *aLength)
 {
-  float fraction, axis;
+  float axis;
 
   switch (aLength->GetCtxType()) {
   case X:
@@ -848,15 +849,11 @@ nsSVGUtils::ObjectSpace(const gfxRect &aRect, const nsSVGLength2 *aLength)
     axis = 0.0f;
     break;
   }
-
   if (aLength->IsPercentage()) {
-    fraction = aLength->GetAnimValInSpecifiedUnits() / 100;
-  } else {
-    fraction = aLength->GetAnimValue(static_cast<nsSVGSVGElement*>
-                                                (nsnull));
+    // Multiply first to avoid precision errors:
+    return axis * aLength->GetAnimValInSpecifiedUnits() / 100;
   }
-
-  return fraction * axis;
+  return aLength->GetAnimValue(static_cast<nsSVGSVGElement*>(nsnull)) * axis;
 }
 
 float
