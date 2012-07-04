@@ -41,4 +41,3 @@ private:
     static QTransform mWindowRotationTransform;
 };
 
-#endif
