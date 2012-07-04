@@ -59,9 +59,15 @@ private:
   /* Called on the source-setup signal emitted by playbin. Used to
    * configure appsrc .
    */
+#if !(MOZ_PLATFORM_MAEMO == 5)
   static void PlayBinSourceSetupCb(GstElement *aPlayBin,
                                    GstElement *aSource,
                                    gpointer aUserData);
+#else
+  static void PlayBinSourceSetupCb(GstElement *aPlayBin,
+                                   GParamSpec *pspec,
+                                   gpointer aUserData);
+#endif
   void PlayBinSourceSetup(GstAppSrc *aSource);
 
   /* Called from appsrc when we need to read more data from the resource */

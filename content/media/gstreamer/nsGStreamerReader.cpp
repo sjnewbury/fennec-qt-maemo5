@@ -158,13 +158,17 @@ nsresult nsGStreamerReader::Init(nsBuiltinDecoderReader* aCloneDonor)
       "video-sink", mVideoSink,
       "audio-sink", mAudioSink,
       NULL);
-
+#if MOZ_PLATFORM_MAEMO > 5
   g_object_connect(mPlayBin, "signal::source-setup",
       nsGStreamerReader::PlayBinSourceSetupCb, this, NULL);
-
+#else
+  g_signal_connect(G_OBJECT(mPlayBin), "notify::source",
+      G_CALLBACK(nsGStreamerReader::PlayBinSourceSetupCb), this);
+#endif
   return NS_OK;
 }
 
+#if !(MOZ_PLATFORM_MAEMO == 5)
 void nsGStreamerReader::PlayBinSourceSetupCb(GstElement *aPlayBin,
                                              GstElement *aSource,
                                              gpointer aUserData)
@@ -172,6 +176,19 @@ void nsGStreamerReader::PlayBinSourceSetupCb(GstElement *aPlayBin,
   nsGStreamerReader *reader = reinterpret_cast<nsGStreamerReader*>(aUserData);
   reader->PlayBinSourceSetup(GST_APP_SRC(aSource));
 }
+#else
+void nsGStreamerReader::PlayBinSourceSetupCb(GstElement *aPlayBin,
+                                             GParamSpec *pspec,
+                                             gpointer aUserData)
+{
+  GstElement *source;
+  nsGStreamerReader *reader = reinterpret_cast<nsGStreamerReader*>(aUserData);
+  
+  g_object_get(aPlayBin, "source", &source, NULL);
+  g_object_unref(source);
+  reader->PlayBinSourceSetup(GST_APP_SRC(source));
+}
+#endif
 
 void nsGStreamerReader::PlayBinSourceSetup(GstAppSrc *aSource)
 {
