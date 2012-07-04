@@ -43,7 +43,7 @@ public:
 public slots:
     static void showVKB();
 
-#ifdef MOZ_ENABLE_QTMOBILITY
+#if (MOZ_PLATFORM_MAEMO == 5) || defined(MOZ_ENABLE_QTMOBILITY)
     void orientationChanged();
 #endif
 
