@@ -2310,7 +2310,6 @@ nsWindow::Create(nsIWidget        *aParent,
 
     mListenForResizes = (aNativeParent ||
                          (aInitData && aInitData->mListenForResizes));
-
     return NS_OK;
 }
 
