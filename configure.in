@@ -5730,7 +5730,11 @@ if test "$MOZ_GSTREAMER"; then
     # core/base release number
     # depend on >= 0.10.33 as that's when the playbin2 source-setup signal was
     # introduced
-    GST_VERSION=0.10.33
+    if test $MOZ_PLATFORM_MAEMO = 5; then
+        GST_VERSION=0.10.25
+    else
+        GST_VERSION=0.10.33
+    fi
     PKG_CHECK_MODULES(GSTREAMER,
                       gstreamer-$GST_API_VERSION >= $GST_VERSION
                       gstreamer-app-$GST_API_VERSION
