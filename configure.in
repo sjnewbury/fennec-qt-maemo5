@@ -5301,6 +5301,10 @@ if test $MOZ_PLATFORM_MAEMO; then
 
    AC_SUBST(MOZ_PLATFORM_MAEMO_LIBS)
    AC_SUBST(MOZ_PLATFORM_MAEMO_CFLAGS)
+
+   if test "$MOZ_PLATFORM_MAEMO = 5"; then
+      MOZ_FIX_LINK_PATHS='-Wl,-rpath-link,$(LIBXUL_DIST)/bin -Wl,-rpath,$(prefix)/$(MOZ_APP_NAME)-$(MOZ_APP_VERSION)'
+   fi
 fi
 
 dnl Turn off webrtc for OS's we don't handle yet, but allow 
