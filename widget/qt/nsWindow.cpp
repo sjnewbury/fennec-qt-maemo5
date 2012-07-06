@@ -58,7 +58,12 @@ using namespace QtMobility;
 #endif
 
 #ifdef MOZ_ENABLE_QTMOBILITY
+#if (MOZ_PLATFORM_MAEMO == 5)
+#include <QApplication>
+#include <QDesktopWidget>
+#else
 #include "mozqorientationsensorfilter.h"
+#endif
 #endif
 
 #include "nsIdleService.h"
@@ -1112,10 +1117,12 @@ nsWindow::DoPaint(QPainter* aPainter, const QStyleOptionGraphicsItem* aOption, Q
 #if defined(MOZ_ENABLE_QTMOBILITY) && (MOZ_PLATFORM_MAEMO > 5)
          // This is needed for rotate transformation on MeeGo
          // This will work very slow if pixman does not handle rotation very well
+#if (MOZ_PLATFORM_MAEMO > 5)
          matr.Rotate((M_PI/180) * gOrientationFilter.GetWindowRotationAngle());
          NS_ASSERTION(PIXMAN_VERSION > PIXMAN_VERSION_ENCODE(0, 21, 2) ||
                       !gOrientationFilter.GetWindowRotationAngle(),
                       "Old pixman and rotate transform, it is going to be slow");
+#endif
 #endif //MOZ_ENABLE_QTMOBILITY
 
       ctx->SetMatrix(matr);
