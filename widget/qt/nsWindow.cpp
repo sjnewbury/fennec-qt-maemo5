@@ -2278,9 +2278,6 @@ nsWindow::Create(nsIWidget        *aParent,
             // Enable rotate support
             widget->setAttribute(Qt::WA_Maemo5AutoOrientation, true);
 
-            // Set non-composited for performance boost
-            widget->setAttribute(Qt::WA_Maemo5NonComposited);
-
             // Grab volume keys for zoom function on Maemo5
             unsigned long volume_set = 1;
             Atom sHildonKeyAtom = XInternAtom(mozilla::DefaultXDisplay(),
