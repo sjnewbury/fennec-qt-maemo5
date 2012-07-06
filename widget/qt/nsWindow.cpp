@@ -52,13 +52,13 @@ using namespace QtMobility;
 #include "nsWindow.h"
 #include "mozqwidget.h"
 
-#ifdef MOZ_ENABLE_QTMOBILITY
 #if (MOZ_PLATFORM_MAEMO == 5)
 #include <QApplication>
 #include <QDesktopWidget>
-#else
-#include "mozqorientationsensorfilter.h"
 #endif
+
+#ifdef MOZ_ENABLE_QTMOBILITY
+#include "mozqorientationsensorfilter.h"
 #endif
 
 #include "nsIdleService.h"
@@ -161,11 +161,9 @@ is_mouse_in_window (MozQWidget* aWindow, double aMouseX, double aMouseY);
 
 static bool sAltGrModifier = false;
 
-#ifdef MOZ_ENABLE_QTMOBILITY
-#if (MOZ_PLATFORM_MAEMO > 5)
+#if defined(MOZ_ENABLE_QTMOBILITY) && (MOZ_PLATFORM_MAEMO > 5)
 static QOrientationSensor *gOrientation = nsnull;
 static MozQOrientationSensorFilter gOrientationFilter;
-#endif
 #endif
 
 static bool
@@ -385,15 +383,13 @@ nsWindow::Destroy(void)
 #ifdef MOZ_HAVE_SHMIMAGE
         gShmImage = nsnull;
 #endif
-#ifdef MOZ_ENABLE_QTMOBILITY
-#if (MOZ_PLATFORM_MAEMO > 5)
+#if defined(MOZ_ENABLE_QTMOBILITY) && (MOZ_PLATFORM_MAEMO > 5)
         if (gOrientation) {
             gOrientation->removeFilter(&gOrientationFilter);
             gOrientation->stop();
             delete gOrientation;
             gOrientation = nsnull;
         }
-#endif
 #endif
     }
 
@@ -1065,14 +1061,12 @@ nsWindow::DoPaint(QPainter* aPainter, const QStyleOptionGraphicsItem* aOption, Q
 
         gfxMatrix matr;
         matr.Translate(gfxPoint(aPainter->transform().dx(), aPainter->transform().dy()));
-#ifdef MOZ_ENABLE_QTMOBILITY
-#if (MOZ_PLATFORM_MAEMO > 5)
+#if defined(MOZ_ENABLE_QTMOBILITY) && (MOZ_PLATFORM_MAEMO > 5)
         // This is needed for rotate transformation on MeeGo
         // This will work very slow if pixman does not handle rotation very well
         matr.Rotate((M_PI/180) * gOrientationFilter.GetWindowRotationAngle());
         static_cast<mozilla::layers::LayerManagerOGL*>(GetLayerManager(nsnull))->
             SetWorldTransform(matr);
-#endif
 #endif //MOZ_ENABLE_QTMOBILITY
 
         status = DispatchEvent(&event);
@@ -1115,15 +1109,13 @@ nsWindow::DoPaint(QPainter* aPainter, const QStyleOptionGraphicsItem* aOption, Q
     else if (renderMode == gfxQtPlatform::RENDER_DIRECT) {
       gfxMatrix matr;
       matr.Translate(gfxPoint(aPainter->transform().dx(), aPainter->transform().dy()));
-#ifdef MOZ_ENABLE_QTMOBILITY
+#if defined(MOZ_ENABLE_QTMOBILITY) && (MOZ_PLATFORM_MAEMO > 5)
          // This is needed for rotate transformation on MeeGo
          // This will work very slow if pixman does not handle rotation very well
-#if (MOZ_PLATFORM_MAEMO > 5)
          matr.Rotate((M_PI/180) * gOrientationFilter.GetWindowRotationAngle());
          NS_ASSERTION(PIXMAN_VERSION > PIXMAN_VERSION_ENCODE(0, 21, 2) ||
                       !gOrientationFilter.GetWindowRotationAngle(),
                       "Old pixman and rotate transform, it is going to be slow");
-#endif
 #endif //MOZ_ENABLE_QTMOBILITY
 
       ctx->SetMatrix(matr);
@@ -2712,7 +2704,7 @@ nsWindow::createQWidget(MozQWidget *parent,
             newView->setWindowModality(Qt::WindowModal);
         }
 
-#if (MOZ_PLATFORM_MAEMO == 5) && defined(MOZ_ENABLE_QTMOBILITY)
+#if (MOZ_PLATFORM_MAEMO == 5)
         QObject::connect(QApplication::desktop(), SIGNAL(resized(int)), widget, SLOT(orientationChanged()));
 #endif
 #if defined(MOZ_PLATFORM_MAEMO) || defined(MOZ_GL_PROVIDER)
@@ -2958,13 +2950,13 @@ nsWindow::Show(bool aState)
 
     mIsShown = aState;
 
-#ifdef MOZ_ENABLE_QTMOBILITY
+#if defined(MOZ_ENABLE_QTMOBILITY) || (MOZ_PLATFORM_MAEMO == 5)
     if (mWidget &&
         (mWindowType == eWindowType_toplevel ||
          mWindowType == eWindowType_dialog ||
          mWindowType == eWindowType_popup))
     {
-#if (MOZ_PLATFORM_MAEMO > 5)
+#if (MOZ_PLATFORM_MAEMO == 5)
         QObject::connect(QApplication::desktop(), SIGNAL(resized(int)),
                          mWidget, SLOT(orientationChanged()));
 #else
