@@ -104,6 +104,8 @@ using namespace QtMobility;
 static Atom sPluginIMEAtom = nullptr;
 #define PLUGIN_VKB_REQUEST_PROP "_NPAPI_PLUGIN_REQUEST_VKB"
 #include <QThread>
+#else
+#define HD_ZOOM_KEY_PROP "_HILDON_ZOOM_KEY_ATOM"
 #endif //MOZ_PLATFORM_MAEMO == 6
 #endif //MOZ_PLATFORM_MAEMO >= 5
 #endif //MOZ_X11
@@ -2251,6 +2253,16 @@ nsWindow::Create(nsIWidget        *aParent,
         if (widget) {
             // Enable rotate support
             widget->setAttribute(Qt::WA_Maemo5AutoOrientation, true);
+
+            // Grab volume keys for zoom function on Maemo5
+            unsigned long volume_set = 1;
+            Atom sHildonKeyAtom = XInternAtom(mozilla::DefaultXDisplay(),
+              HD_ZOOM_KEY_PROP, False);
+            if (sHildonKeyAtom)
+                XChangeProperty (mozilla::DefaultXDisplay(),
+                  widget->winId(), sHildonKeyAtom,
+                  XA_INTEGER, 32, PropModeReplace,
+                  reinterpret_cast<unsigned char *>(&volume_set), 1);
         }
     }
 #endif
