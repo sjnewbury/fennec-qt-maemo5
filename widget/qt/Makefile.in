@@ -62,8 +62,10 @@ EXPORTS		= \
 		$(NULL)
 
 ifdef MOZ_ENABLE_QTMOBILITY
+ifeq ($(MOZ_PLATFORM_MAEMO),6)
 MOCSRCS += moc_mozqorientationsensorfilter.cpp
 CPPSRCS += mozqorientationsensorfilter.cpp
+endif
 endif
 
 SHARED_LIBRARY_LIBS = ../xpwidgets/libxpwidgets_s.a

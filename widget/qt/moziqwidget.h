@@ -76,9 +76,11 @@ public:
             return;
         if (aTopLevel) {
             // transfer new size to graphics widget
+#if (MOZ_PLATFORM_MAEMO > 5)
             aTopLevel->setGeometry(0.0, 0.0,
                 static_cast<qreal>(aEvent->size().width()),
                 static_cast<qreal>(aEvent->size().height()));
+#endif
             // resize scene rect to vieport size,
             // to avoid extra scrolling from QAbstractScrollable
             if (mView)

@@ -36,7 +36,7 @@ static Qt::GestureType gSwipeGestureId = Qt::CustomGesture;
 // How many milliseconds mouseevents are blocked after receiving
 // multitouch.
 static const float GESTURES_BLOCK_MOUSE_FOR = 200;
-#ifdef MOZ_ENABLE_QTMOBILITY
+#if defined(MOZ_ENABLE_QTMOBILITY) && (MOZ_PLATFORM_MAEMO > 5)
 #include <QtSensors/QOrientationSensor>
 using namespace QtMobility;
 #endif // MOZ_ENABLE_QTMOBILITY
@@ -53,7 +53,12 @@ using namespace QtMobility;
 #include "nsWindow.h"
 #include "mozqwidget.h"
 
-#ifdef MOZ_ENABLE_QTMOBILITY
+#if (MOZ_PLATFORM_MAEMO == 5)
+#include <QApplication>
+#include <QDesktopWidget>
+#endif
+
+#if defined(MOZ_ENABLE_QTMOBILITY) && (MOZ_PLATFORM_MAEMO > 5)
 #include "mozqorientationsensorfilter.h"
 #endif
 
@@ -85,7 +90,7 @@ using namespace QtMobility;
 #include "nsIDOMSimpleGestureEvent.h" //Gesture support
 #include "nsIDOMWheelEvent.h"
 
-#if MOZ_PLATFORM_MAEMO > 5
+#if (MOZ_PLATFORM_MAEMO > 5)
 #include "nsIDOMWindow.h"
 #include "nsIDOMElement.h"
 #include "nsIFocusManager.h"
@@ -93,12 +98,14 @@ using namespace QtMobility;
 
 #ifdef MOZ_X11
 #include "keysym2ucs.h"
-#if MOZ_PLATFORM_MAEMO == 6
+#if (MOZ_PLATFORM_MAEMO >= 5)
 #include <X11/Xatom.h>
+#if (MOZ_PLATFORM_MAEMO == 6)
 static Atom sPluginIMEAtom = nullptr;
 #define PLUGIN_VKB_REQUEST_PROP "_NPAPI_PLUGIN_REQUEST_VKB"
 #include <QThread>
-#endif
+#endif //MOZ_PLATFORM_MAEMO == 6
+#endif //MOZ_PLATFORM_MAEMO >= 5
 #endif //MOZ_X11
 
 #include "Layers.h"
@@ -153,7 +160,7 @@ is_mouse_in_window (MozQWidget* aWindow, double aMouseX, double aMouseY);
 
 static bool sAltGrModifier = false;
 
-#ifdef MOZ_ENABLE_QTMOBILITY
+#if defined(MOZ_ENABLE_QTMOBILITY) && (MOZ_PLATFORM_MAEMO > 5)
 static QOrientationSensor *gOrientation = nullptr;
 static MozQOrientationSensorFilter gOrientationFilter;
 #endif
@@ -374,7 +381,7 @@ nsWindow::Destroy(void)
 #ifdef MOZ_HAVE_SHMIMAGE
         gShmImage = nullptr;
 #endif
-#ifdef MOZ_ENABLE_QTMOBILITY
+#if defined(MOZ_ENABLE_QTMOBILITY) && (MOZ_PLATFORM_MAEMO > 5)
         if (gOrientation) {
             gOrientation->removeFilter(&gOrientationFilter);
             gOrientation->stop();
@@ -1038,7 +1045,7 @@ nsWindow::DoPaint(QPainter* aPainter, const QStyleOptionGraphicsItem* aOption, Q
 
         gfxMatrix matr;
         matr.Translate(gfxPoint(aPainter->transform().dx(), aPainter->transform().dy()));
-#ifdef MOZ_ENABLE_QTMOBILITY
+#if defined(MOZ_ENABLE_QTMOBILITY) && (MOZ_PLATFORM_MAEMO > 5)
         // This is needed for rotate transformation on MeeGo
         // This will work very slow if pixman does not handle rotation very well
         matr.Rotate((M_PI/180) * gOrientationFilter.GetWindowRotationAngle());
@@ -1088,7 +1095,7 @@ nsWindow::DoPaint(QPainter* aPainter, const QStyleOptionGraphicsItem* aOption, Q
     else if (renderMode == gfxQtPlatform::RENDER_DIRECT) {
       gfxMatrix matr;
       matr.Translate(gfxPoint(aPainter->transform().dx(), aPainter->transform().dy()));
-#ifdef MOZ_ENABLE_QTMOBILITY
+#if defined(MOZ_ENABLE_QTMOBILITY) && (MOZ_PLATFORM_MAEMO > 5)
          // This is needed for rotate transformation on MeeGo
          // This will work very slow if pixman does not handle rotation very well
          matr.Rotate((M_PI/180) * gOrientationFilter.GetWindowRotationAngle());
@@ -1436,7 +1443,7 @@ nsWindow::OnFocusOutEvent(QEvent *aEvent)
     if (!mWidget)
         return nsEventStatus_eIgnore;
 
-#if MOZ_PLATFORM_MAEMO > 5
+#if (MOZ_PLATFORM_MAEMO > 5)
     if (((QFocusEvent*)aEvent)->reason() == Qt::OtherFocusReason
          && mWidget->isVKBOpen()) {
         // We assume that the VKB was open in this case, because of the focus
@@ -2238,6 +2245,15 @@ nsWindow::Create(nsIWidget        *aParent,
     if (!mWidget)
         return NS_ERROR_OUT_OF_MEMORY;
 
+#if (MOZ_PLATFORM_MAEMO == 5)
+    if (aInitData && aInitData->mWindowType == eWindowType_toplevel) {
+        QWidget *widget = GetViewWidget();
+        if (widget) {
+            // Enable rotate support
+            widget->setAttribute(Qt::WA_Maemo5AutoOrientation, true);
+        }
+    }
+#endif
     LOG(("Create: nsWindow [%p] [%p]\n", (void *)this, (void *)mWidget));
 
     // resize so that everything is set to the right dimensions
@@ -2646,6 +2662,9 @@ nsWindow::createQWidget(MozQWidget *parent,
             newView->setWindowModality(Qt::WindowModal);
         }
 
+#if (MOZ_PLATFORM_MAEMO == 5)
+        QObject::connect(QApplication::desktop(), SIGNAL(resized(int)), widget, SLOT(orientationChanged()));
+#endif
 #if defined(MOZ_PLATFORM_MAEMO) || defined(MOZ_GL_PROVIDER)
         if (GetShouldAccelerate()) {
             // Only create new OGL widget if it is not yet installed
@@ -2880,12 +2899,13 @@ nsWindow::Show(bool aState)
 
     mIsShown = aState;
 
-#ifdef MOZ_ENABLE_QTMOBILITY
+#if defined(MOZ_ENABLE_QTMOBILITY) || (MOZ_PLATFORM_MAEMO == 5)
     if (mWidget &&
         (mWindowType == eWindowType_toplevel ||
          mWindowType == eWindowType_dialog ||
          mWindowType == eWindowType_popup))
     {
+#if (MOZ_PLATFORM_MAEMO > 5)
         if (!gOrientation) {
             gOrientation = new QOrientationSensor();
             gOrientation->addFilter(&gOrientationFilter);
@@ -2898,6 +2918,7 @@ nsWindow::Show(bool aState)
             QObject::connect((QObject*) &gOrientationFilter, SIGNAL(orientationChanged()),
                              mWidget, SLOT(orientationChanged()));
         }
+#endif
     }
 #endif
 

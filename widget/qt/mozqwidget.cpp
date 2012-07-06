@@ -20,6 +20,10 @@
 
 
 #ifdef MOZ_ENABLE_QTMOBILITY
+#if (MOZ_PLATFORM_MAEMO == 5)
+#include <QApplication>
+#include <QDesktopWidget>
+#else
 #include "mozqorientationsensorfilter.h"
 #ifdef MOZ_X11
 #include <QX11Info>
@@ -29,6 +33,7 @@
 # undef KeyRelease
 # undef CursorShape
 #endif //MOZ_X11
+#endif //!(MOZ_PLATFORM_MAEMO == 5)
 #endif //MOZ_ENABLE_QTMOBILITY
 
 /*
@@ -143,6 +148,11 @@ void MozQWidget::orientationChanged()
     }
 
     NS_ASSERTION(scene()->views().size() == 1, "Not exactly one view for our scene!");
+#if (MOZ_PLATFORM_MAEMO == 5)
+    QRect screenGeometry = QApplication::desktop()->screenGeometry();
+    resize(screenGeometry.size());
+    scene()->setSceneRect(QRectF(QPointF(0, 0), screenGeometry.size()));
+#else
     QTransform& transform = MozQOrientationSensorFilter::GetRotationTransform();
     QRect scrTrRect = transform.mapRect(scene()->views()[0]->rect());
 
@@ -167,6 +177,7 @@ void MozQWidget::orientationChanged()
     XChangeProperty(display, scene()->views()[0]->effectiveWinId(),
                     orientationAngleAtom, XA_CARDINAL, 32,
                     PropModeReplace, (unsigned char*)&orientation, 1);
+#endif
 #endif
 }
 #endif
