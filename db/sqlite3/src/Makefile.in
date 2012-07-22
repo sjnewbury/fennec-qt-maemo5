@@ -60,6 +60,9 @@ ifeq ($(OS_ARCH),WINNT)
 MODULE_OPTIMIZE_FLAGS = -O2
 endif
 
+# Force -fno-fast-math since sqlite3 doesn't support -ffast-math
+MODULE_OPTIMIZE_FLAGS += -fno-fast-math       
+
 EXPORTS = \
   sqlite3.h \
   $(NULL)
